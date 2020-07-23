@@ -1,4 +1,4 @@
-package conf
+package config
 
 // dbConfig contains the database configuration details.
 type dbConfig struct {
@@ -12,6 +12,7 @@ type cacheConfig struct {
 type Config struct {
 	Database dbConfig
 	Cache    cacheConfig
+	LogLevel string
 }
 
 // GetConfig returns an instance of config
