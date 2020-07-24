@@ -2,6 +2,7 @@ package endpoints
 
 import (
 	"gicicm/providers"
+
 	"github.com/gin-gonic/gin"
 )
 

@@ -2,6 +2,7 @@ package providers
 
 import (
 	"context"
+
 	"gicicm/models"
 	"gicicm/stores"
 )
@@ -18,8 +19,8 @@ type userProvider struct {
 	userStore stores.UserRepository
 }
 
-// NewUserRepository returns a new instance of the user repository.
-func NewUserRepository(userStore stores.UserRepository) UserProvider {
+// NewUserProvider returns a new instance of the user repository.
+func NewUserProvider(userStore stores.UserRepository) UserProvider {
 	return &userProvider{
 		userStore: userStore,
 	}

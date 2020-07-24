@@ -1,10 +1,11 @@
 package logger
 
 import (
-	"gicicm/config"
+	"os"
+	"sync"
+
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"sync"
 )
 
 var (
@@ -13,14 +14,18 @@ var (
 	once   sync.Once
 )
 
+const (
+	logLevelEnvVar = "LOG_LEVEL"
+)
+
 // New returns a new instance of the logger.
 // XXX: Only on the first call a new instance is received
 // any subsequent calls return previously initialized instance.
-func New(config config.Config) (*zap.Logger, error) {
+func Log() *zap.Logger {
 	zapConfig := zap.Config{
-		Level:            zap.NewAtomicLevelAt(getZapLogLevel(config.LogLevel)),
+		Level:            zap.NewAtomicLevelAt(getZapLogLevel()),
 		Encoding:         "json",
-		OutputPaths:      []string{"stderr", "/tmp/log"},
+		OutputPaths:      []string{"stderr"},
 		ErrorOutputPaths: []string{"stderr"},
 		EncoderConfig: zapcore.EncoderConfig{
 			MessageKey:  "message",
@@ -29,16 +34,17 @@ func New(config config.Config) (*zap.Logger, error) {
 			LevelKey:    "level",
 			EncodeLevel: zapcore.CapitalLevelEncoder,
 		},
-		DisableStacktrace: true,
-		DisableCaller:     false,
 	}
 
 	// ensures that there is only one instance of the logger at anytime.
 	once.Do(func() {
 		logger, err = zapConfig.Build()
+		if err != nil {
+			panic("Logger could not be initialized. Error: " + err.Error())
+		}
 	})
 
-	return logger, err
+	return logger
 }
 
 /*
@@ -63,11 +69,12 @@ func New(config config.Config) (*zap.Logger, error) {
 */
 
 // getZapLogLevel returns a corresponding zaplog level
-// based on the logLevel input string.
+// based on the logLevel from the value set in the envvar LOG_LEVEL.
 // defaults to zapcore.InfoLevel
-func getZapLogLevel(logLevel string) zapcore.Level {
+func getZapLogLevel() zapcore.Level {
 
 	var level zapcore.Level
+	logLevel := os.Getenv(logLevelEnvVar)
 
 	switch logLevel {
 	case "debug":
