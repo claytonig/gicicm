@@ -4,8 +4,18 @@ import (
 	"gicicm/config"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"sync"
 )
 
+var (
+	logger *zap.Logger
+	err    error
+	once   sync.Once
+)
+
+// New returns a new instance of the logger.
+// XXX: Only on the first call a new instance is received
+// any subsequent calls return previously initialized instance.
 func New(config config.Config) (*zap.Logger, error) {
 	zapConfig := zap.Config{
 		Level:            zap.NewAtomicLevelAt(getZapLogLevel(config.LogLevel)),
@@ -23,12 +33,12 @@ func New(config config.Config) (*zap.Logger, error) {
 		DisableCaller:     false,
 	}
 
-	logger, err := zapConfig.Build()
-	if err != nil {
-		return nil, err
-	}
+	// ensures that there is only one instance of the logger at anytime.
+	once.Do(func() {
+		logger, err = zapConfig.Build()
+	})
 
-	return logger, nil
+	return logger, err
 }
 
 /*
