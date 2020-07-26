@@ -20,6 +20,7 @@ type cache struct {
 	cacheConn *redis.Client
 }
 
+// NewCache returns an instance of newCache
 func NewCache(config *config.Config) Cache {
 	cacheConn := newCacheConnection(config)
 	return &cache{

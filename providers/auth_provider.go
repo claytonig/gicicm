@@ -18,6 +18,7 @@ type AuthProvider interface {
 	Login(ctx context.Context, request *models.LoginRequest) (string, error)
 	ParseToken(ctx context.Context, token string) (map[string]interface{}, error)
 	Logout(ctx context.Context, token, email string) error
+	IsTokenRevoked(ctx context.Context, token string) bool
 }
 
 // authProvider is struct for auth Provider
@@ -87,4 +88,8 @@ func (ap *authProvider) Logout(ctx context.Context, token, email string) error {
 		return err
 	}
 	return nil
+}
+
+func (ap *authProvider) IsTokenRevoked(ctx context.Context, token string) bool {
+	return ap.authStore.IsTokenRevoked(ctx, token)
 }

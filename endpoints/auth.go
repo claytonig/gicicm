@@ -17,6 +17,7 @@ func (ctrl *Controller) Login(c *gin.Context) {
 	ctx := c.Request.Context()
 
 	response := make(map[string]interface{})
+
 	request := new(models.LoginRequest)
 	err := c.BindJSON(request)
 	if err != nil {
@@ -28,9 +29,9 @@ func (ctrl *Controller) Login(c *gin.Context) {
 
 	token, err := ctrl.authProvider.Login(ctx, request)
 	if err != nil {
-		logger.Log().Error("error while binding request body to user", zap.Error(err))
-		response["error"] = err.Error()
-		c.JSON(http.StatusBadRequest, response)
+		logger.Log().Info("Invalid credentials", zap.Any("request", request), zap.Error(err))
+		response["error"] = "Invalid credentials"
+		c.JSON(http.StatusUnauthorized, response)
 		return
 	}
 
@@ -43,24 +44,28 @@ func (ctrl *Controller) Verify(c *gin.Context) {
 	ctx := c.Request.Context()
 
 	response := make(map[string]interface{})
-	authToken := c.Request.Header.Get("Authorization")
 
+	// fetch auth token from headers
+	authToken := c.Request.Header.Get("Authorization")
 	if authToken == "" {
+		logger.Log().Info("Invalid credentials, no token", zap.Any("authToken", authToken))
 		response["error"] = "invalid auth token"
 		c.JSON(http.StatusUnauthorized, response)
 		c.Abort()
 		return
 	}
-
+	// remove bearer part from header and parse token to get claims
 	authToken = strings.Replace(authToken, "Bearer ", "", 1)
 	parsedToken, err := ctrl.authProvider.ParseToken(ctx, authToken)
 	if err != nil {
+		logger.Log().Info("Invalid credentials", zap.Any("authToken", authToken))
 		response["error"] = "invalid auth token"
 		c.JSON(http.StatusUnauthorized, response)
 		c.Abort()
 		return
 	}
 
+	// set claim in context for later use.
 	c.Set("isAdmin", parsedToken["isAdmin"])
 	c.Set("email", parsedToken["email"])
 	c.Set("token", authToken)
@@ -72,10 +77,9 @@ func (ctrl *Controller) Logout(c *gin.Context) {
 
 	metadata, err := parseContextMetaData(c)
 	if err != nil {
-
+		logger.Log().Error("error parsing metadata", zap.Error(err))
 	}
 
 	ctx := c.Request.Context()
-
 	ctrl.authProvider.Logout(ctx, metadata.Token, metadata.Email)
 }

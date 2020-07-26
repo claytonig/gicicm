@@ -1,0 +1,18 @@
+# base image
+FROM golang:alpine
+
+RUN apk update && apk add \
+    curl \
+    make
+
+RUN rm -rf /var/lib/apt/lists/*
+
+RUN mkdir -p /srv/app
+WORKDIR /srv/app
+
+COPY . /srv/app
+
+RUN make mod
+
+RUN make testdc
+

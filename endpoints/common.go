@@ -16,7 +16,7 @@ func parseContextMetaData(c *gin.Context) (*models.RequestMetaData, error) {
 		metadata.IsAdmin = isAdmin
 	}
 
-	email, ok := c.Keys["isAdmin"].(string)
+	email, ok := c.Keys["email"].(string)
 	if !ok {
 		return nil, errors.New("cannot get metadata from request")
 	} else {

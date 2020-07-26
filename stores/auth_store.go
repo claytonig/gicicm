@@ -12,6 +12,7 @@ import (
 // AuthRepository is a repository layer for all user related operations.
 type AuthRepository interface {
 	RevokeToken(ctx context.Context, token, email string) error
+	IsTokenRevoked(ctx context.Context, token string) bool
 }
 
 // AuthRepo is responsible for communicating with the data stores via the adapter.
@@ -33,4 +34,13 @@ func (ar *AuthRepo) RevokeToken(ctx context.Context, token, email string) error 
 		logger.Log().Error("error revoking token", zap.String("key", key), zap.String("email", email), zap.Error(err))
 	}
 	return nil
+}
+
+func (ar *AuthRepo) IsTokenRevoked(ctx context.Context, token string) bool {
+	key := fmt.Sprintf("token:%s", token)
+	val, err := ar.Cache.Get(key)
+	if err != nil && val != "" {
+		return true
+	}
+	return false
 }
