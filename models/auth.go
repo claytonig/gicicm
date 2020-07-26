@@ -1,8 +1,8 @@
 package models
 
-// LoginRequest represents a login requst
+// LoginRequest represents a login request
 type LoginRequest struct {
-	Username string
+	Email    string
 	Password string
 }
 

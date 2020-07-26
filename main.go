@@ -31,9 +31,10 @@ func main() {
 
 	// Init stores
 	userStore := stores.NewUserRepository(database, cache)
+	authStore := stores.NewAuthRepository(cache)
 
 	// Init providers
-	authProvider := providers.NewAuthProvider(userStore)
+	authProvider := providers.NewAuthProvider(userStore, authStore)
 	userProvider := providers.NewUserProvider(userStore)
 
 	// Init controller
@@ -46,7 +47,7 @@ func main() {
 		WriteTimeout: time.Second * 5,
 	}
 
-	logger.Log().Info("Listen on 8000...")
+	logger.Log().Info("Listening on 8000...")
 
 	server.ListenAndServe()
 }

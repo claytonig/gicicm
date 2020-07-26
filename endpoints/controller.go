@@ -28,15 +28,15 @@ func NewController(
 	gicicmRoot := router.Group("/gicicm")
 
 	// Unauthenticated endpoints
-	gicicmRoot.POST("auth/signup", controller.SignUp)
+	gicicmRoot.POST("auth/signup", controller.CreateUser)
+
+	// auth
+	gicicmRoot.POST("auth/login", controller.Login)
 
 	// auth middleware
 	gicicmRoot.Use(controller.Verify)
 
-	// auth
-	gicicmRoot.GET("auth/login", controller.Login)
-
 	// users
 	gicicmRoot.GET("/users", controller.ListUsers)
-	gicicmRoot.DELETE("/users", controller.DeleteUser)
+	gicicmRoot.DELETE("/users/:email", controller.DeleteUser)
 }

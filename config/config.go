@@ -31,17 +31,30 @@ type Config struct {
 // GetConfig returns an instance of config
 func GetConfig() *Config {
 
+	//dbConf := dbConfig{
+	//	Host:   mustGetEnv("DB_HOST"),
+	//	Port:   mustGetEnv("DB_PORT"),
+	//	User:   mustGetEnv("DB_USER"),
+	//	Pass:   mustGetEnv("DB_PASS"),
+	//	DBName: mustGetEnv("DB_NAME"),
+	//	DBType: mustGetEnv("DB_TYPE"),
+	//}
+	//
+	//cacheConf := cacheConfig{
+	//	Host: mustGetEnv("CACHE_HOST"),
+	//}
+
 	dbConf := dbConfig{
-		Host:   mustGetEnv("DB_HOST"),
-		Port:   mustGetEnv("DB_PORT"),
-		User:   mustGetEnv("DB_USER"),
-		Pass:   mustGetEnv("DB_PASS"),
-		DBName: mustGetEnv("DB_NAME"),
-		DBType: mustGetEnv("DB_TYPE"),
+		Host:   "localhost",
+		Port:   "5432",
+		User:   "demorole1",
+		Pass:   "password1",
+		DBName: "icm_test",
+		DBType: "postgres",
 	}
 
 	cacheConf := cacheConfig{
-		Host: mustGetEnv("CACHE_HOST"),
+		Host: "localhost::6379",
 	}
 
 	return &Config{

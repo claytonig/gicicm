@@ -7,6 +7,7 @@ import (
 	"gicicm/config"
 	"gicicm/logger"
 
+	_ "github.com/lib/pq" //dialect to be used
 	"go.uber.org/zap"
 )
 
