@@ -1,0 +1,7 @@
+# ignore unwanted files and folders not required in docker context
+*.md
+.idea
+vendor
+coverage.txt
+LICENSE
+.gitignore

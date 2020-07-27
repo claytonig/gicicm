@@ -14,5 +14,6 @@ COPY . /srv/app
 
 RUN make mod
 
-RUN make testdc
+RUN ls
 
+CMD go run main.go
