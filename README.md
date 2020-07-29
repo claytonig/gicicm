@@ -1,12 +1,12 @@
-#gicicm
+# gicicm
 
-##TO RUN 
+## TO RUN 
 ```
 To run the server: 
 docker-compose up
 ```
 
-##RUN TESTS 
+## RUN TESTS 
 ```
 for unit tests:
 make unit 
@@ -18,7 +18,7 @@ for all tests:
 make testall
 ```
 
-##API's 
+## API's 
 ```
 Create User: 
 POST /gicicm/auth/signup HTTP/1.1
