@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// parseContextMetaData parses the current context and returns metadata about the request
 func parseContextMetaData(c *gin.Context) (*models.RequestMetaData, error) {
 	metadata := new(models.RequestMetaData)
 

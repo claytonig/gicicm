@@ -6,12 +6,21 @@ setup: ## Install all the build and lint dependencies
 	go get -u golang.org/x/tools/cmd/cover
 	go mod vendor
 
-.PHONY: test
-test: ## Run all the tests with coverage
+.PHONY: testall
+testall: ## Run all the tests
+	make unit
+	make integration
 
-	echo 'mode: atomic' > coverage.txt && \
-		go test -covermode=atomic -coverprofile=coverage.txt -v -race -timeout=30s \
-		$$(go list ./... | grep -Ev 'vendor|mocks')
+.PHONY: integration
+integration: ## Run integrations tests
+	docker-compose -f docker-compose.dev.yml up -d --force-recreate
+	go test -cover ./... -race --tags=integration
+	docker-compose -f docker-compose.dev.yml down
+	docker-compose -f docker-compose.dev.yml rm -f
+
+.PHONY: unit
+unit: ## Run unit tests
+	go test -cover ./... -race
 
 .PHONY: lint
 lint: ## Run all the linters

@@ -1,5 +1,5 @@
 # base image
-FROM golang:alpine
+FROM golang:alpine as build
 
 RUN apk update && apk add \
     curl \
@@ -14,6 +14,13 @@ COPY . /srv/app
 
 RUN make mod
 
-RUN ls
+RUN make buildl
 
-CMD go run main.go
+# ---> build binaries
+FROM alpine
+COPY --from=build /srv/app/go-server /app/
+WORKDIR /app
+
+CMD ["./go-icm"]
+
+

@@ -1,6 +1,7 @@
 package endpoints
 
 import (
+	"gicicm/common"
 	"net/http"
 	"strings"
 
@@ -17,21 +18,29 @@ func (ctrl *Controller) Login(c *gin.Context) {
 	ctx := c.Request.Context()
 
 	response := make(map[string]interface{})
-
 	request := new(models.LoginRequest)
+
 	err := c.BindJSON(request)
 	if err != nil {
 		logger.Log().Error("error while binding request body to user", zap.Error(err))
-		response["error"] = err.Error()
+		response["error"] = common.BadRequestError
 		c.JSON(http.StatusBadRequest, response)
+		c.Abort()
 		return
 	}
 
 	token, err := ctrl.authProvider.Login(ctx, request)
 	if err != nil {
-		logger.Log().Info("Invalid credentials", zap.Any("request", request), zap.Error(err))
-		response["error"] = "Invalid credentials"
-		c.JSON(http.StatusUnauthorized, response)
+		if err.Error() == common.InvalidCredentialsError {
+			logger.Log().Info("Invalid credentials", zap.Any("request", request), zap.Error(err))
+			response["error"] = common.InvalidCredentialsError
+			c.JSON(http.StatusUnauthorized, response)
+			c.Abort()
+			return
+		}
+		response["error"] = common.InternalServerError
+		c.JSON(http.StatusInternalServerError, response)
+		c.Abort()
 		return
 	}
 
@@ -56,6 +65,15 @@ func (ctrl *Controller) Verify(c *gin.Context) {
 	}
 	// remove bearer part from header and parse token to get claims
 	authToken = strings.Replace(authToken, "Bearer ", "", 1)
+
+	if ctrl.authProvider.IsTokenRevoked(ctx, authToken) {
+		logger.Log().Info("Invalid credentials", zap.Any("authToken", authToken))
+		response["error"] = "invalid auth token"
+		c.JSON(http.StatusUnauthorized, response)
+		c.Abort()
+		return
+	}
+
 	parsedToken, err := ctrl.authProvider.ParseToken(ctx, authToken)
 	if err != nil {
 		logger.Log().Info("Invalid credentials", zap.Any("authToken", authToken))
@@ -74,12 +92,23 @@ func (ctrl *Controller) Verify(c *gin.Context) {
 
 // Logout is an endpoint that logs a user out.
 func (ctrl *Controller) Logout(c *gin.Context) {
+	ctx := c.Request.Context()
+	response := make(map[string]interface{})
 
 	metadata, err := parseContextMetaData(c)
 	if err != nil {
 		logger.Log().Error("error parsing metadata", zap.Error(err))
+		response["error"] = common.InternalServerError
+		c.JSON(http.StatusInternalServerError, response)
+		c.Abort()
+		return
 	}
 
-	ctx := c.Request.Context()
-	ctrl.authProvider.Logout(ctx, metadata.Token, metadata.Email)
+	err = ctrl.authProvider.Logout(ctx, metadata.Token, metadata.Email)
+	if err != nil {
+		response["error"] = common.InternalServerError
+		c.JSON(http.StatusInternalServerError, response)
+		c.Abort()
+		return
+	}
 }

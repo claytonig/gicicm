@@ -7,8 +7,8 @@ import (
 	"gicicm/logger"
 )
 
-// dbConfig contains the database configuration details.
-type dbConfig struct {
+// DbConfig contains the database configuration details.
+type DbConfig struct {
 	Host   string // DB_HOST
 	Port   string // DB_PORT
 	User   string // DB_USER
@@ -17,21 +17,22 @@ type dbConfig struct {
 	DBType string // DB_TYPE
 }
 
-// cacheConfig contains the cache configuration details.
-type cacheConfig struct {
+// CacheConfig contains the cache configuration details.
+type CacheConfig struct {
 	Host string // CACHE_HOST
 }
 
 // Config contains configuration details for gicicm to start
 type Config struct {
-	Database dbConfig
-	Cache    cacheConfig
+	Database   DbConfig
+	Cache      CacheConfig
+	SigningKey string
 }
 
 // GetConfig returns an instance of config
 func GetConfig() *Config {
 
-	dbConf := dbConfig{
+	dbConf := DbConfig{
 		Host:   mustGetEnv("DB_HOST"),
 		Port:   mustGetEnv("DB_PORT"),
 		User:   mustGetEnv("DB_USER"),
@@ -40,26 +41,14 @@ func GetConfig() *Config {
 		DBType: mustGetEnv("DB_TYPE"),
 	}
 
-	cacheConf := cacheConfig{
+	cacheConf := CacheConfig{
 		Host: mustGetEnv("CACHE_HOST"),
 	}
-	//
-	//dbConf := dbConfig{
-	//	Host:   "localhost",
-	//	Port:   "5432",
-	//	User:   "demorole1",
-	//	Pass:   "password1",
-	//	DBName: "icm_test",
-	//	DBType: "postgres",
-	//}
-	//
-	//cacheConf := cacheConfig{
-	//	Host: "localhost::6379",
-	//}
 
 	return &Config{
-		Database: dbConf,
-		Cache:    cacheConf,
+		Database:   dbConf,
+		Cache:      cacheConf,
+		SigningKey: mustGetEnv("SIGNING_KEY"),
 	}
 }
 

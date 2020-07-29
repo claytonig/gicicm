@@ -27,6 +27,7 @@ func NewAuthRepository(cache cache.Cache) AuthRepository {
 	}
 }
 
+// RevokeToken adds a token to the cache in a blacklist.
 func (ar *AuthRepo) RevokeToken(ctx context.Context, token, email string) error {
 	key := fmt.Sprintf("token:%s", token)
 	_, err := ar.Cache.Set(key, email, time.Hour*24)
@@ -36,10 +37,11 @@ func (ar *AuthRepo) RevokeToken(ctx context.Context, token, email string) error 
 	return nil
 }
 
+// IsTokenRevoked checks if a token is revoked or not.
 func (ar *AuthRepo) IsTokenRevoked(ctx context.Context, token string) bool {
 	key := fmt.Sprintf("token:%s", token)
 	val, err := ar.Cache.Get(key)
-	if err != nil && val != "" {
+	if err == nil && val != "" {
 		return true
 	}
 	return false

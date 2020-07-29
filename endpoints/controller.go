@@ -2,7 +2,6 @@ package endpoints
 
 import (
 	"gicicm/providers"
-
 	"github.com/gin-gonic/gin"
 )
 
@@ -15,14 +14,19 @@ type Controller struct {
 
 // NewController returns a new instance of the controller.
 func NewController(
-	router *gin.Engine,
 	authProvider providers.AuthProvider,
-	userProvider providers.UserProvider) {
+	userProvider providers.UserProvider) *gin.Engine {
 
 	controller := &Controller{
 		authProvider: authProvider,
 		userProvider: userProvider,
 	}
+
+	// new router
+	router := gin.New()
+
+	router.Use(gin.Logger())
+	router.Use(gin.Recovery())
 
 	// root path
 	gicicmRoot := router.Group("/gicicm")
@@ -34,9 +38,14 @@ func NewController(
 	gicicmRoot.POST("auth/login", controller.Login)
 
 	// auth middleware
+	// all endpoint below this are authenticated.
 	gicicmRoot.Use(controller.Verify)
+
+	gicicmRoot.POST("auth/logout", controller.Logout)
 
 	// users
 	gicicmRoot.GET("/users", controller.ListUsers)
 	gicicmRoot.DELETE("/users/:email", controller.DeleteUser)
+
+	return router
 }

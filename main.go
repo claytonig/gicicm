@@ -1,9 +1,6 @@
 package main
 
 import (
-	"net/http"
-	"time"
-
 	"gicicm/adapters/cache"
 	"gicicm/adapters/db"
 	"gicicm/config"
@@ -11,17 +8,12 @@ import (
 	"gicicm/logger"
 	"gicicm/providers"
 	"gicicm/stores"
-
-	"github.com/gin-gonic/gin"
+	"log"
+	"net/http"
+	"time"
 )
 
 func main() {
-
-	// new router
-	router := gin.New()
-
-	router.Use(gin.Logger())
-	router.Use(gin.Recovery())
 
 	config := config.GetConfig()
 
@@ -37,8 +29,8 @@ func main() {
 	authProvider := providers.NewAuthProvider(userStore, authStore)
 	userProvider := providers.NewUserProvider(userStore)
 
-	// Init controller
-	endpoints.NewController(router, authProvider, userProvider)
+	// Init controller with router
+	router := endpoints.NewController(authProvider, userProvider)
 
 	server := &http.Server{
 		Addr:         "0.0.0.0:8000",
@@ -49,5 +41,8 @@ func main() {
 
 	logger.Log().Info("Listening on 8000...")
 
-	server.ListenAndServe()
+	err := server.ListenAndServe()
+	if err != nil {
+		log.Fatal(err)
+	}
 }

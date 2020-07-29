@@ -17,7 +17,7 @@ type Cache interface {
 }
 
 type cache struct {
-	cacheConn *redis.Client
+	cacheConn redis.Cmdable
 }
 
 // NewCache returns an instance of newCache
@@ -28,8 +28,8 @@ func NewCache(config *config.Config) Cache {
 	}
 }
 
-// newCacheConnection - Initializes cache connection
-func newCacheConnection(config *config.Config) *redis.Client {
+// newCacheConnection initializes a cache connection
+func newCacheConnection(config *config.Config) redis.Cmdable {
 	cacheConn := redis.NewClient(&redis.Options{
 		Addr:        config.Cache.Host,
 		Password:    "",
@@ -42,7 +42,7 @@ func newCacheConnection(config *config.Config) *redis.Client {
 	return cacheConn
 }
 
-// Get - Get value from redis
+// Get gets a value from redis
 func (c *cache) Get(key string) (string, error) {
 	data, err := c.cacheConn.Get(key).Result()
 	if err != nil {
@@ -51,7 +51,7 @@ func (c *cache) Get(key string) (string, error) {
 	return data, err
 }
 
-// Set - Set value to redis
+// Set sets a  value to redis
 func (c *cache) Set(key string, value string, duration time.Duration) (string, error) {
 	result, err := c.cacheConn.Set(key, value, duration).Result()
 	if err != nil {
@@ -60,7 +60,7 @@ func (c *cache) Set(key string, value string, duration time.Duration) (string, e
 	return result, err
 }
 
-// Del - Delete the key
+// Del Deletes a key from redis
 func (c *cache) Del(key string) error {
 	err := c.cacheConn.Del(key).Err()
 	if err != nil {

@@ -3,9 +3,12 @@ package providers
 import (
 	"context"
 	"errors"
-	"golang.org/x/crypto/bcrypt"
+	"gicicm/common"
+	"gicicm/config"
 	"strings"
 	"time"
+
+	"golang.org/x/crypto/bcrypt"
 
 	"gicicm/models"
 	"gicicm/stores"
@@ -26,13 +29,15 @@ type AuthProvider interface {
 type authProvider struct {
 	userStore stores.UserRepository
 	authStore stores.AuthRepository
+	config    *config.Config
 }
 
 // NewAuthProvider returns a new instance of the auth repository.
-func NewAuthProvider(userStore stores.UserRepository, authStore stores.AuthRepository) AuthProvider {
+func NewAuthProvider(userStore stores.UserRepository, authStore stores.AuthRepository, config *config.Config) AuthProvider {
 	return &authProvider{
 		userStore: userStore,
 		authStore: authStore,
+		config:    config,
 	}
 }
 
@@ -44,29 +49,35 @@ func (ap *authProvider) Login(ctx context.Context, request *models.LoginRequest)
 		return "", err
 	}
 
+	// compare passwords
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(request.Password))
 	if err != nil {
-		return "", err
+		return "", errors.New(common.InvalidCredentialsError)
 	}
 
+	// add claims for tokens
 	claims := jwt.MapClaims{}
 	claims["iss"] = "icm"
 	claims["exp"] = time.Now().Add(time.Hour * 24).Unix()
 	claims["email"] = request.Email
+	claims["isAdmin"] = false
 
+	// if email has a test.com suffix
+	// give admin privileges
 	if strings.HasSuffix(user.Email, "@test.com") {
 		claims["isAdmin"] = true
 	}
 
+	// generate token and return
 	rawToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	token, _ := rawToken.SignedString([]byte("sad"))
+	token, _ := rawToken.SignedString([]byte(ap.config.SigningKey))
 	return token, nil
 }
 
 // Verify parses the token and verifies the user for further operation.
 func (ap *authProvider) ParseToken(ctx context.Context, token string) (map[string]interface{}, error) {
 	parseToken, err := jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
-		return []byte("sad"), nil
+		return []byte(ap.config.SigningKey), nil
 	})
 
 	if err != nil {
@@ -90,6 +101,7 @@ func (ap *authProvider) Logout(ctx context.Context, token, email string) error {
 	return nil
 }
 
+// IsTokenRevoked checks if a token is revoked or not.
 func (ap *authProvider) IsTokenRevoked(ctx context.Context, token string) bool {
 	return ap.authStore.IsTokenRevoked(ctx, token)
 }

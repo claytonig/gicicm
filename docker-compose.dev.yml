@@ -7,16 +7,9 @@ services:
     environment:
       - POSTGRES_PASSWORD=password
       - POSTGRES_DB=icm
+    ports:
+      - 5432:5432
   cache:
     image: redis
-  server:
-    build:
-      dockerfile: Dockerfile
-      context: .
     ports:
-      - 8000:8000
-    env_file:
-      - ./test_data/config.env
-    depends_on:
-      - database
-      - cache
+      - 6379:6379

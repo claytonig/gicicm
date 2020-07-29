@@ -4,7 +4,9 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"gicicm/common"
 	"time"
 
 	"gicicm/adapters/cache"
@@ -36,6 +38,8 @@ const (
 	deleteUserQuery = "DELETE FROM users WHERE email='%s'"
 )
 
+var funcGenerate = generateHash
+
 // NewUserRepository returns a new instance of the user repository.
 func NewUserRepository(db *sql.DB, cache cache.Cache) UserRepository {
 	return &UserRepo{
@@ -53,7 +57,11 @@ func (ur *UserRepo) Create(ctx context.Context, user *models.User) error {
 		return err
 	}
 
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), 10)
+	hashedPassword, err := funcGenerate(user.Password)
+	if err != nil {
+		logger.Log().Error("error while hashing password", zap.Error(err))
+		return err
+	}
 
 	query := fmt.Sprintf(createUserQuery, user.Name, user.Email, hashedPassword)
 	stmt, err := tx.Prepare(query)
@@ -70,8 +78,14 @@ func (ur *UserRepo) Create(ctx context.Context, user *models.User) error {
 	_, err = stmt.Exec()
 
 	if err != nil {
+		// check for duplicate key error.
+		if err.Error() == "pq: duplicate key value violates unique constraint \"users_email_key\"" {
+			err = errors.New(common.AccountAlreadyExistsError)
+		}
+
 		logger.Log().Error("error while executing query", zap.String("query", query), zap.Error(err))
 		rollBackErr := tx.Rollback()
+
 		if rollBackErr != nil {
 			logger.Log().Error("Error while rolling back transaction", zap.String("query", query), zap.Error(err))
 		}
@@ -93,7 +107,7 @@ func (ur *UserRepo) Fetch(ctx context.Context, emailID string) (*models.User, er
 
 	val, err := ur.cache.Get(fmt.Sprintf("user:%s", emailID))
 
-	if err != nil {
+	if err != nil || val == "" {
 		logger.Log().Error("Error while fetching user from cache", zap.String("key", emailID), zap.Error(err))
 	} else {
 		bytes := []byte(val)
@@ -121,7 +135,10 @@ func (ur *UserRepo) Fetch(ctx context.Context, emailID string) (*models.User, er
 	}
 
 	bytes, err := json.Marshal(user)
-	_, err = ur.cache.Set(emailID, string(bytes), time.Duration(0))
+	if err != nil {
+		logger.Log().Error("error while unmarshaling data from cache", zap.String("key", emailID), zap.Error(err))
+	}
+	_, err = ur.cache.Set(fmt.Sprintf("user:%s", emailID), string(bytes), time.Duration(0))
 	if err != nil {
 		logger.Log().Error("error while setting cache", zap.String("key", emailID), zap.Error(err))
 	}
@@ -165,6 +182,13 @@ func (ur *UserRepo) List(ctx context.Context) ([]models.User, error) {
 // Delete user based on id.
 func (ur *UserRepo) Delete(ctx context.Context, email string) error {
 
+	key := fmt.Sprintf("user:%s", email)
+	err := ur.cache.Del(key)
+	if err != nil {
+		logger.Log().Error("error while deleting from cache", zap.String("key", key), zap.Error(err))
+		return err
+	}
+
 	tx, err := ur.db.BeginTx(ctx, nil)
 	if err != nil {
 		logger.Log().Error("error while starting transaction", zap.Error(err))
@@ -190,6 +214,11 @@ func (ur *UserRepo) Delete(ctx context.Context, email string) error {
 		return err
 	}
 
+	if rows == 0 {
+		logger.Log().Info(common.AccountNotFoundError, zap.String("email", email))
+		return errors.New(common.AccountNotFoundError)
+	}
+
 	err = tx.Commit()
 	if err != nil {
 		logger.Log().Error("Error while committing transaction", zap.String("query", query), zap.Error(err))
@@ -199,4 +228,9 @@ func (ur *UserRepo) Delete(ctx context.Context, email string) error {
 	logger.Log().Info("successfully deleted user", zap.String("email", email), zap.Int64("rows affected", rows))
 
 	return nil
+}
+
+// generateHash generates a hash for a given password
+func generateHash(pass string) ([]byte, error) {
+	return bcrypt.GenerateFromPassword([]byte(pass), 10)
 }
