@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 function tag {
-  gh auth login --with-token $TOKEN
+  gh auth login
   gh release create $RELEASE
 }
 
