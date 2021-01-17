@@ -15,5 +15,6 @@ jobs:
       - name: test
         id: tag_test
         run: |
-          echo {{steps.tag_version.outputs.new_tag}}
-          gh release create
+          echo ${{steps.tag_version.outputs.new_tag}}
+          gh auth login --with-token ${{ secrets.GITHUB_TOKEN }}
+          gh release create ${{steps.tag_version.outputs.new_tag}}
