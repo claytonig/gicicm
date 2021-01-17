@@ -13,8 +13,10 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
       - name: test
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE: ${{steps.tag_version.outputs.new_tag}} 
         id: tag_test
         run: |
           echo ${{steps.tag_version.outputs.new_tag}}
-          gh auth login --with-token ${{ secrets.GITHUB_TOKEN }}
-          gh release create ${{steps.tag_version.outputs.new_tag}}
+          bash scripts/test.sh
